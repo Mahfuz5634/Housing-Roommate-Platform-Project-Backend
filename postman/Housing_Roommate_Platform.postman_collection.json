@@ -1,0 +1,354 @@
+{
+  "info": {
+    "_postman_id": "c1f7b889-105a-4b9e-b9ef-roommatehub-2026",
+    "name": "Housing & Roommate Platform API (B7A6)",
+    "description": "Complete production REST API collection for Housing & Roommate Platform. Includes Auth (Email + GCP Social), 3 Roles (Admin, Landlord, Tenant), Roommate Compatibility Algorithm, Properties, Rooms, Bookings, Stripe Payments, Maintenance Tickets, Reviews, and Admin Analytics.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "landlordToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tenantToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Authentication",
+      "item": [
+        {
+          "name": "Register User (Tenant)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newtenant@roommatehub.com\",\n  \"password\": \"Tenant@123456\",\n  \"role\": \"TENANT\",\n  \"firstName\": \"David\",\n  \"lastName\": \"Beckham\",\n  \"phone\": \"+1-555-0999\",\n  \"city\": \"New York\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Login - Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.collectionVariables.set('adminToken', res.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@roommatehub.com\",\n  \"password\": \"Admin@123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login - Landlord",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.collectionVariables.set('landlordToken', res.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.landlord@roommatehub.com\",\n  \"password\": \"Landlord@123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login - Tenant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.collectionVariables.set('tenantToken', res.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alex.tenant@roommatehub.com\",\n  \"password\": \"Tenant@123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Google Social Login (GCP)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"mock-google-token-user@gmail.com\",\n  \"role\": \"TENANT\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/google-login", "host": ["{{baseUrl}}"], "path": ["auth", "google-login"] }
+          }
+        },
+        {
+          "name": "Get Current User Profile (Me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tenantToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Users & Profiles",
+      "item": [
+        {
+          "name": "Get All Users (Admin Only)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/users?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["users"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }] }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tenantToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Updated bio: Software Engineer looking for clean roommates!\",\n  \"phone\": \"+1-555-8888\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/profile", "host": ["{{baseUrl}}"], "path": ["users", "profile"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Roommates & Matching Engine",
+      "item": [
+        {
+          "name": "Upsert Roommate Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{tenantToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"budgetMin\": 800,\n  \"budgetMax\": 1600,\n  \"preferredGender\": \"ANY\",\n  \"occupation\": \"Software Engineer\",\n  \"sleepSchedule\": \"EARLY_BIRD\",\n  \"smoking\": false,\n  \"pets\": false,\n  \"cleanlinessScore\": 5,\n  \"preferredLocations\": [\"Manhattan\", \"Brooklyn\"],\n  \"bio\": \"Calm and friendly developer who values cleanliness.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/roommates/profile", "host": ["{{baseUrl}}"], "path": ["roommates", "profile"] }
+          }
+        },
+        {
+          "name": "Get Compatibility Matches (Algorithm)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tenantToken}}" }],
+            "url": { "raw": "{{baseUrl}}/roommates/match", "host": ["{{baseUrl}}"], "path": ["roommates", "match"] }
+          }
+        },
+        {
+          "name": "Browse Roommate Profiles",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tenantToken}}" }],
+            "url": { "raw": "{{baseUrl}}/roommates?minBudget=500&maxBudget=2000", "host": ["{{baseUrl}}"], "path": ["roommates"], "query": [{ "key": "minBudget", "value": "500" }, { "key": "maxBudget", "value": "2000" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Properties & Listings",
+      "item": [
+        {
+          "name": "Create Property Listing (Landlord)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{landlordToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Sunny 3-Bed Loft near Central Park\",\n  \"description\": \"Large windows, exposed brick, chef kitchen with stainless steel appliances.\",\n  \"propertyType\": \"APARTMENT\",\n  \"address\": \"100 Central Park West\",\n  \"city\": \"New York\",\n  \"area\": \"Upper West Side\",\n  \"totalRent\": 3200,\n  \"bedrooms\": 3,\n  \"bathrooms\": 2,\n  \"amenities\": [\"Elevator\", \"Gym\", \"Doorman\", \"Washer/Dryer\"],\n  \"rules\": [\"No smoking\"]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/properties", "host": ["{{baseUrl}}"], "path": ["properties"] }
+          }
+        },
+        {
+          "name": "Get All Properties (Search & Filter)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/properties?city=New York&minRent=1000&maxRent=4000", "host": ["{{baseUrl}}"], "path": ["properties"], "query": [{ "key": "city", "value": "New York" }, { "key": "minRent", "value": "1000" }, { "key": "maxRent", "value": "4000" }] }
+          }
+        },
+        {
+          "name": "Get Landlord My Listings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{landlordToken}}" }],
+            "url": { "raw": "{{baseUrl}}/properties/my-listings", "host": ["{{baseUrl}}"], "path": ["properties", "my-listings"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Bookings & Applications",
+      "item": [
+        {
+          "name": "Get My Bookings (Tenant)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tenantToken}}" }],
+            "url": { "raw": "{{baseUrl}}/bookings/my-bookings", "host": ["{{baseUrl}}"], "path": ["bookings", "my-bookings"] }
+          }
+        },
+        {
+          "name": "Get Landlord Received Bookings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{landlordToken}}" }],
+            "url": { "raw": "{{baseUrl}}/bookings/landlord", "host": ["{{baseUrl}}"], "path": ["bookings", "landlord"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Stripe Payments",
+      "item": [
+        {
+          "name": "Get My Payments",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tenantToken}}" }],
+            "url": { "raw": "{{baseUrl}}/payments/my-payments", "host": ["{{baseUrl}}"], "path": ["payments", "my-payments"] }
+          }
+        },
+        {
+          "name": "Get All Platform Payments (Admin Only)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/payments/all", "host": ["{{baseUrl}}"], "path": ["payments", "all"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Maintenance Tickets",
+      "item": [
+        {
+          "name": "Get My Maintenance Requests (Tenant)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tenantToken}}" }],
+            "url": { "raw": "{{baseUrl}}/maintenance/my-requests", "host": ["{{baseUrl}}"], "path": ["maintenance", "my-requests"] }
+          }
+        },
+        {
+          "name": "Get Landlord Maintenance Tickets",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{landlordToken}}" }],
+            "url": { "raw": "{{baseUrl}}/maintenance/landlord", "host": ["{{baseUrl}}"], "path": ["maintenance", "landlord"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Admin Analytics & Moderation",
+      "item": [
+        {
+          "name": "Get Dashboard Analytics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/admin/analytics", "host": ["{{baseUrl}}"], "path": ["admin", "analytics"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Error Cases Demonstration",
+      "item": [
+        {
+          "name": "400 Bad Request - Validation Error",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"not-a-valid-email\",\n  \"password\": \"\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "403 Forbidden - Role Authorization Violation",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tenantToken}}" }],
+            "url": { "raw": "{{baseUrl}}/admin/analytics", "host": ["{{baseUrl}}"], "path": ["admin", "analytics"] }
+          }
+        },
+        {
+          "name": "404 Not Found - Non-existent Endpoint",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/unknown-resource", "host": ["{{baseUrl}}"], "path": ["unknown-resource"] }
+          }
+        }
+      ]
+    }
+  ]
+}
